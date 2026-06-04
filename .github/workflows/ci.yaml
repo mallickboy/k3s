@@ -37,7 +37,7 @@ jobs:
           PINECONE_ENVIRONMENT=${{ secrets.PINECONE_ENVIRONMENT }} \
           PINECONE_INDEX=${{ secrets.PINECONE_INDEX }} \
           PINECONE_NAMESPACE=${{ secrets.PINECONE_NAMESPACE }} \
-          docker compose up -d --build
+          docker compose up -d --build 
 
       - name: Wait for service
         run: |
