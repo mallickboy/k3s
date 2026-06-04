@@ -32,12 +32,7 @@ jobs:
         run: docker build -t pysearch .
 
       - name: Run container
-        run: |
-          docker run -d \
-            --name pysearch \
-            -p 3000:8000 \
-            -e WORKERS=1 \
-            pysearch
+        run: docker compose up -d --build
 
       - name: Wait for service
         run: |
