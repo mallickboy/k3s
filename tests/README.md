@@ -1,0 +1,17 @@
+Using Pytest for CI/CD
+
+### Unit Tests
+```
+PYTHONPATH=. pytest tests/unit -v
+```
+
+### Integration test
+
+```
+pytest tests/integration -v
+```
+
+Dev Verification
+```
+python  tests/integration/main.py
+```

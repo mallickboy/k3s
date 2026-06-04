@@ -1,0 +1,19 @@
+# Environment files
+.env
+.venv/
+venv/
+
+# Python cache
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# Other ignorable filess
+*.ipynb
+*.json
+*.csv
+app_flask/
+
+# Test cache
+*.pytest_cache

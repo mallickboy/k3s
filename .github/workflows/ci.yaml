@@ -1,0 +1,68 @@
+name: Python CI
+
+on:
+  push:
+    branches: [ "main" ]
+  pull_request:
+    branches: [ "main" ]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r app/requirements.txt || true
+          pip install -r tests/requirements.txt || true
+
+      - name: Run unit tests
+        run: pytest tests/unit -v
+
+      - name: Build Docker image
+        run: docker build -t pysearch .
+
+      - name: Run container
+        run: |
+          docker run -d \
+            --name pysearch \
+            -p 3000:8000 \
+            -e WORKERS=1 \
+            pysearch
+
+      - name: Wait for service
+        run: |
+          for i in {1..40}; do
+            if curl -s http://localhost:3000/health > /dev/null; then
+              echo "Service is up!"
+              exit 0
+            fi
+            echo "Waiting for service..."
+            sleep 2
+          done
+
+          echo "Service failed to start"
+          docker logs pysearch
+          exit 1
+
+      - name: Run integration tests
+        run: pytest tests/integration -v
+
+      - name: Stop container
+        if: always()
+        run: |
+          docker stop pysearch || true
+          docker rm pysearch || true
+
+      - name: Debug logs on failure
+        if: failure()
+        run: docker logs pysearch || true
