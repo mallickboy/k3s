@@ -2,9 +2,9 @@ name: Python CI
 
 on:
   push:
-    branches: [ "main" ]
+    branches: [ "pysearch-k3s" ]
   pull_request:
-    branches: [ "main" ]
+    branches: [ "pysearch-k3s" ]
 
 jobs:
   test:
