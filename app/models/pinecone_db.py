@@ -7,6 +7,9 @@ from app.config import PINECONE_KEY, PINECONE_ENVIRONMENT, PINECONE_INDEX, SENTE
 # MODEL = SentenceTransformer(SENTENCE_TRANSFORMER)
 # MODEL = SentenceTransformer(SENTENCE_TRANSFORMER_MODEL, cache_folder=MODEL_CACHE)
 
+# Initialize API keys once per worker
+PC, INDEX = None, None
+
 def init_pinecone_index(retries=3, delay=2):
     for i in range(retries):
         try:
@@ -19,8 +22,6 @@ def init_pinecone_index(retries=3, delay=2):
             delay *= 2  # exponential backoff
     raise RuntimeError("Failed to initialize Pinecone after retries")
 
-# Initialize once per worker
-PC, INDEX = init_pinecone_index()
 
 def query_pinecone(vector, top_k=50, namespace="ns2"):
     global INDEX, PC
