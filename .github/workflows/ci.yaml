@@ -26,17 +26,13 @@ jobs:
           pip install -r tests/requirements.txt || true
 
       - name: Run unit tests
-        run: pytest tests/unit -v
+        run: pytest tests/unit_ci -v
 
       - name: Build Docker image
         run: docker build -t pysearch .
 
       - name: Run container
         run: |
-          PINECONE_KEY=${{ secrets.PINECONE_KEY }} \
-          PINECONE_ENVIRONMENT=${{ secrets.PINECONE_ENVIRONMENT }} \
-          PINECONE_INDEX=${{ secrets.PINECONE_INDEX }} \
-          PINECONE_NAMESPACE=${{ secrets.PINECONE_NAMESPACE }} \
           docker compose up -d --build 
 
       - name: Wait for service
@@ -55,7 +51,7 @@ jobs:
           exit 1
 
       - name: Run integration tests
-        run: pytest tests/integration -v
+        run: pytest tests/integration_ci -v
 
       - name: Stop container
         if: always()
