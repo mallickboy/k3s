@@ -32,7 +32,12 @@ jobs:
         run: docker build -t pysearch .
 
       - name: Run container
-        run: docker compose up -d --build
+        run: |
+          PINECONE_KEY=${{ secrets.PINECONE_KEY }} \
+          PINECONE_ENVIRONMENT=${{ secrets.PINECONE_ENVIRONMENT }} \
+          PINECONE_INDEX=${{ secrets.PINECONE_INDEX }} \
+          PINECONE_NAMESPACE=${{ secrets.PINECONE_NAMESPACE }} \
+          docker compose up -d --build
 
       - name: Wait for service
         run: |
