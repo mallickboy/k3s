@@ -1,7 +1,7 @@
 import os
 import requests
 
-BASE_URL = "http://localhost:3000"
+BASE_URL = os.getenv("TARGET_API_URL", "http://localhost:3000")
 DEBUG = os.getenv("DEBUG_TESTS") == "1"
 
 def test_search_schema(log= False):

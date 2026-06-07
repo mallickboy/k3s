@@ -1,7 +1,7 @@
 import os
 import requests
 
-BASE_URL = "http://localhost:3000"
+BASE_URL = os.getenv("TARGET_API_URL", "http://localhost:3000")
 DEBUG = os.getenv("DEBUG_TESTS") == "1"
 
 def check_relevance(query: str, min_match: float = 0.5, top_k: int = 5, log=False):

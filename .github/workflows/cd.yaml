@@ -1,0 +1,68 @@
+name: CI/CD Automation LXC Deployment
+
+on:
+  push:
+    branches: [ "pysearch-k3s" ]
+
+jobs:
+  deploy-and-test:
+    runs-on: self-hosted  # Executes via my local Proxmox self-hosted runner
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      # --- STEP 1: DEPLOY & ORCHESTRATE DOCKER COMPOSE VIA SSH ---
+      - name: SSH, Sync Code, Build Secrets, and Compose Up
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: 'automation.mallickboy.com'
+          port: 2222
+          username: 'root'
+          key: ${{ secrets.AUTOMATION_LXC_SSH_KEY }}
+          script: |
+            # Clone or navigate to the deployment directory on my LXC
+            if [ ! -d "/pysearch-cd" ]; then
+              git clone https://github.com/mallickboy/k3s.git /pysearch-cd
+            fi
+            cd /pysearch-cd
+            
+            # Fetch and hard-align to the pysearch-k3s branch
+            git fetch origin
+            git checkout pysearch-k3s
+            git pull origin pysearch-k3s
+            git reset --hard origin/pysearch-k3s
+
+            if command -v ufw > /dev/null; then
+              ufw allow 3000/tcp
+            fi
+            
+            # --- SECRET INJECTION ---
+            # Create the .env file exactly where docker-compose.yml expects it (at the root)
+            echo "PINECONE_API_KEY=${{ secrets.PINECONE_API_KEY }}" > .env
+            echo "PINECONE_ENVIRONMENT=${{ secrets.PINECONE_ENVIRONMENT }}" >> .env
+            echo "PINECONE_INDEX=${{ secrets.PINECONE_INDEX }}" >> .env
+            echo "PINECONE_NAMESPACE=${{ secrets.PINECONE_NAMESPACE }}" >> .env
+            
+            # --- DOCKER CONTEXT EXECUTION ---
+            # Drop old containers, rebuild layers using your root configs, and launch detached
+            docker compose down || true
+            docker compose up -d --build
+            
+            # Give the container 5 seconds to run start.sh and initialize models
+            sleep 5
+
+      # --- STEP 2: RUN INTEGRATION TESTS AGAINST THE LIVE LXC DEPLOYMENT ---
+      - name: Set up Python for Testing
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install Testing Requirements
+        run: pip install -r tests/requirements.txt || true
+
+      - name: Run E2E Verification Tests
+        env:
+          # Target lxc endpoint on port 3000
+          TARGET_API_URL: "http://192.168.1.31:3000"
+        run: |
+          pytest tests/integration_prod -v

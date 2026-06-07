@@ -9,6 +9,7 @@ PYTHONPATH=. pytest tests/unit -v
 
 ```
 pytest tests/integration -v
+pytest tests/integration_prod -v
 ```
 
 Dev Verification
