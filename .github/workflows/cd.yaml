@@ -1,12 +1,18 @@
-name: CI/CD Automation LXC Deployment
+name: CD Automation LXC Deployment
+
+# on:
+#   push:
+#     branches: [ "pysearch-k3s" ]
 
 on:
-  push:
-    branches: [ "pysearch-k3s" ]
+  workflow_run:
+    workflows: ["Continuous Integration"]  # runs after successful CI workflow
+    types:
+      - completed
 
 jobs:
   deploy-and-test:
-    runs-on: self-hosted  # Executes via my local Proxmox self-hosted runner
+    runs-on: ubuntu-latest
     steps:
       - name: Checkout Code
         uses: actions/checkout@v4
@@ -50,19 +56,21 @@ jobs:
             
             # Give the container 5 seconds to run start.sh and initialize models
             sleep 5
+            
+            # 6. Resolve Environment venv and pip dependencies locally on the LXC
+            echo "Ensuring testing packages are installed on LXC system..."
+            apt-get update -y && apt-get install -y python3-venv python3-pip
 
-      # --- STEP 2: RUN INTEGRATION TESTS AGAINST THE LIVE LXC DEPLOYMENT ---
-      - name: Set up Python for Testing
-        uses: actions/setup-python@v5
-        with:
-          python-version: '3.11'
-
-      - name: Install Testing Requirements
-        run: pip install -r tests/requirements.txt || true
-
-      - name: Run E2E Verification Tests
-        env:
-          # Target lxc endpoint on port 3000
-          TARGET_API_URL: "http://192.168.1.31:3000"
-        run: |
-          pytest tests/integration_prod -v
+            # 7. Run E2E Verification Tests inside local container loopback context
+            echo "Beginning Local End-to-End Tests inside LXC..."
+            export TARGET_API_URL="http://127.0.0.1:3000"
+            
+            python3 -m venv test-env
+            source test-env/bin/activate
+            
+            pip install -r tests/requirements.txt || pip install pytest requests
+            pytest tests/integration_prod -v
+            
+            # 8. Clean up workspace environments inside the machine directory
+            deactivate
+            rm -rf test-env
